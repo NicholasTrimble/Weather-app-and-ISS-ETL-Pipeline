@@ -1,3 +1,7 @@
+![Dashboard](Skypulse.png)
+
+
+
 SkyPulse
 
 SkyPulse is a personal project I built to track the International Space Station (ISS) and display live weather
