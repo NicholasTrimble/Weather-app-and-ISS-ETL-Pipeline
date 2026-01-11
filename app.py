@@ -5,69 +5,58 @@ from utils.weather_helpers import get_weather_data, calculate_visibility
 import os
 from dotenv import load_dotenv
 import utils.astronomy_api as astronomy_api
+import requests
 
 
 
 load_dotenv()
+
+NEWS_API_KEY = os.getenv("API_KEY_NEWSAPI")
 
 DB_NAME = "iss_pipeline.db"
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return """
-    <html>
-    <head>
-        <title>ISS ETL Dashboard</title>
-        <style>
-            body {
-                background-color: #000;
-                color: #fff;
-                font-family: 'Open Sans', Open Sans;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-            }
-            h1 {
-                font-size: 4.5em;
-                margin-bottom: 20px;
-            }
-            a {
-                color: #1e90ff;
-                text-decoration: none;
-                font-size: 1.2em;
-            }
-            a:hover {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
-    <body>
-        <h1>Interactive Map With Weather and ISS ETL Dashboard</h1>
-        <p>Go to <a href="/data">ISS location</a> to see the latest ISS entries.</p>
-        <p>Go to <a href="/map">Interactive map with Weather</a> to see the latest weather.</p>
-        <form action="/subscribe" method="POST" style="margin-top: 20px;" onsubmit="showAlert()">
-            <input type="email" name="email" placeholder="your_email@example.com" required
-            style="padding: 10px; font-size: 1em;">
-            <button type="submit" style="padding: 10px; font-size: 1em;">Subscribe</button>
-        </form>
-
-    </body>
-    <script>
-        function showAlert() {
-        alert("Thank you! You are subscribed.");
-        }
-    </script>
-    </html>
-    """
+    return render_template("home.html")
 
 @app.route("/map")
 def show_map():
     return render_template("map.html")
 
+@app.route("/news")
+def get_news():
+    city = request.args.get("city")
+    if not city:
+        return jsonify({"headlines": ["No city provided."]})
+
+    news_url = "https://newsapi.org/v2/everything"
+    params = {
+        "q": city,
+        "sortBy": "publishedAt",
+        "language": "en",
+        "pageSize": 5,
+        "apiKey": NEWS_API_KEY
+    }
+
+    try:
+        response = requests.get(news_url, params=params, timeout=10)
+        response.raise_for_status() 
+        data = response.json()
+        
+        if data.get("status") != "ok":
+            print("NewsAPI error:", data)
+            return jsonify({"headlines": ["Error fetching news from NewsAPI."]})
+
+        articles = data.get("articles", [])
+        headlines = [article["title"] for article in articles]
+        if not headlines:
+            headlines = ["No recent news found for this city."]
+        return jsonify({"headlines": headlines})
+
+    except Exception as e:
+        print("Exception in /news route:", e)
+        return jsonify({"headlines": ["Error fetching news."]})
 
 @app.route("/subscribe", methods=["POST"])
 def subscribe():
@@ -86,8 +75,8 @@ def iss_position():
         response = requests.get("http://api.open-notify.org/iss-now.json", timeout=10)
         response.raise_for_status()
         data = response.json()
-        latitude = float(data["iss_position"]["latitude"])
-        longitude = float(data["iss_position"]["longitude"])
+        latitude = float((data["iss_position"]["latitude"]),4)
+        longitude = float((data["iss_position"]["longitude"]),4)
         timestamp = datetime.now(timezone.utc).isoformat()
     except:
         # fallback
@@ -105,8 +94,8 @@ def iss_position():
 @app.route("/weather_info")
 def weather_info_route():
     # Get latitude and longitude from query parameters
-    lat = float(request.args.get("lat", 51.507351))  # default London
-    lon = float(request.args.get("lon", -0.127758))
+    lat = round(float(request.args.get("lat", 51.507351)), 4)  # default London
+    lon = round(float(request.args.get("lon", -0.127758)), 4)
 
     # Determine if it’s night (optional, default True for now)
     is_night_time = True

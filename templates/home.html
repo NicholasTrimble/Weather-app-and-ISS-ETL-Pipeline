@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CityDataPortal Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    
+    <!-- Leaflet CSS/JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        /* Map and news container */
+        #map { height: 500px; margin-bottom: 15px; border: 2px solid #1e90ff; border-radius: 8px; }
+        #newsContainer { background-color: #111; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        #newsContainer h3 { margin-top: 0; }
+        .card { background-color: #222; padding: 20px; margin: 20px 0; border-radius: 12px; width: 90%; max-width: 900px; }
+        .nav-buttons { margin: 20px 0; }
+        .nav-buttons button { padding: 10px 20px; margin-right: 10px; font-size: 1em; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+    <h1>CityDataPortal</h1>
+    <p>Track the ISS, view weather, and explore news by city.</p>
+</header>
+
+<!-- Navigation -->
+<div class="nav-buttons">
+    <a href="/data"><button>Latest ISS Data</button></a>
+    <a href="/map"><button>Interactive Weather Map</button></a>
+</div>
+
+<!-- News Map -->
+<section class="card">
+    <h2>Explore Local News</h2>
+    <p>Click a major city on the map to fetch its latest news headlines.</p>
+    <p>You can also click "Next Largest City" to cycle through nearby cities.</p>
+
+    <div id="map"></div>
+    <button id="nextCityNewsBtn">Show Next Largest City News</button>
+    <div id="newsContainer">
+        <p>Click a city on the map to see news headlines here.</p>
+    </div>
+</section>
+
+<!-- Latest ISS -->
+<section class="card">
+    <h2>Latest ISS Entries</h2>
+    <pre id="latestData">
+Fetching data...
+    </pre>
+</section>
+
+<!-- Subscribe -->
+<section class="card">
+    <h2>Subscribe for Updates</h2>
+    <form action="/subscribe" method="POST" onsubmit="showAlert()">
+        <input type="email" name="email" placeholder="your_email@example.com" required>
+        <button type="submit">Subscribe</button>
+    </form>
+</section>
+
+<footer>
+    <p>CityDataPortal &copy; 2026</p>
+</footer>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    function showAlert() {
+        alert("Thank you! You are subscribed.");
+    }
+    window.showAlert = showAlert;
+
+    // ----- Leaflet Map for News -----
+    const map = L.map('map').setView([20, 0], 2); // world view
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let cities = [];
+    let currentCityIndex = 0;
+
+    // Load cities.json
+    fetch('{{ url_for("static", filename="cities.json") }}')
+        .then(res => res.json())
+        .then(data => {
+            cities = data;
+
+            cities.forEach((city, index) => {
+                const marker = L.marker([city.lat, city.lon]).addTo(map);
+                marker.bindPopup(`<b>${city.name}, ${city.country}</b><br>
+                    <button onclick="fetchNews(${index})">Show News</button>`);
+            });
+        })
+        .catch(err => console.error("Error loading cities.json:", err));
+
+    // Fetch news via Flask /news route
+    window.fetchNews = function(index) {
+        if(!cities[index]) return;
+        const city = cities[index].name;
+        currentCityIndex = index;
+
+        fetch(`/news?city=${city}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById("newsContainer");
+                container.innerHTML = `<h3>News for ${city}</h3>`;
+                if(data.headlines.length === 0) {
+                    container.innerHTML += "<p>No news found.</p>";
+                    return;
+                }
+                data.headlines.forEach(headline => {
+                    const p = document.createElement("p");
+                    p.textContent = "• " + headline;
+                    container.appendChild(p);
+                });
+            })
+            .catch(err => {
+                const container = document.getElementById("newsContainer");
+                container.innerHTML = `<p>Error fetching news for ${city}.</p>`;
+                console.error(err);
+            });
+    };
+
+    // Next Largest City button
+    document.getElementById("nextCityNewsBtn").addEventListener("click", function() {
+        if(cities.length === 0) return;
+        const nextIndex = (currentCityIndex + 1) % cities.length;
+        fetchNews(nextIndex);
+    });
+});
+</script>
+
+</body>
+</html>

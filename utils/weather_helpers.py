@@ -48,7 +48,7 @@ def get_weather_data(latitude, longitude, is_night_time=True):
         data = response.json()
 
         temperature_celsius = data.get("main", {}).get("temp", None)
-        temperature_fahrenheit = round(temperature_celsius * 9/5 + 32, 2) if temperature_celsius is not None else None
+        temperature_fahrenheit = float(f"{temperature_celsius * 9/5 + 32:.2f}") if temperature_celsius is not None else None
         cloud_percent = data.get("clouds", {}).get("all", 0)
         description = data.get("weather", [{}])[0].get("description", "No data").capitalize()
         visibility = "High" if is_night_time and cloud_percent < 30 else \
