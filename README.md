@@ -1,4 +1,4 @@
-![Dashboard](Skypulsehome.png)
+![Dashboard](skypulsehome.png)
 ![Dashboard](Skypulse.png)
 
 
