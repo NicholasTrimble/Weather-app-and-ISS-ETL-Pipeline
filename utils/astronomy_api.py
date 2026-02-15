@@ -2,6 +2,9 @@ import os
 from requests.auth import HTTPBasicAuth
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 ASTRO_BASE = "https://api.astronomyapi.com/api/v2/studio"
 
