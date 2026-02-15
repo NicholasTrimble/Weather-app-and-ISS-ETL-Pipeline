@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 API_KEY_OPENWEATHER = os.getenv("API_KEY_OPENWEATHER")
 
-lat, lon = 51.507351, -0.127758  # London
+lat, lon = 51.507351, -0.127758 
 
 url = "http://api.openweathermap.org/data/2.5/weather"
 params = {
