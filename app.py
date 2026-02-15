@@ -1,3 +1,6 @@
+import datetime
+from zoneinfo import ZoneInfo
+from Main import fetch_iss_position
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import sqlite3
 from database import add_user, remove_user
@@ -68,6 +71,15 @@ def subscribe():
 
 @app.route("/iss_position")
 def iss_position():
+    latitude, longitude, timestamp = get_iss_position()
+    return jsonify({
+        "latitude": latitude,
+        "longitude": longitude,
+        "timestamp": timestamp
+    })
+
+
+def get_iss_position():
     import requests
     from datetime import datetime, timezone
 
@@ -75,20 +87,19 @@ def iss_position():
         response = requests.get("http://api.open-notify.org/iss-now.json", timeout=10)
         response.raise_for_status()
         data = response.json()
-        latitude = float((data["iss_position"]["latitude"]),4)
-        longitude = float((data["iss_position"]["longitude"]),4)
-        timestamp = datetime.now(timezone.utc).isoformat()
+        latitude = round(float(data["iss_position"]["latitude"]), 2)
+        longitude = round(float(data["iss_position"]["longitude"]), 2)
+        central = ZoneInfo("America/Chicago")
+        timestamp = datetime.now(tz=central).strftime("%b %d, %Y • %I:%M:%S %p %Z")
+
     except:
         # fallback
         latitude = 51.5
         longitude = -0.1
         timestamp = datetime.now(timezone.utc).isoformat()
 
-    return jsonify({
-        "latitude": latitude,
-        "longitude": longitude,
-        "timestamp": timestamp
-    })
+    return latitude, longitude, timestamp
+    
 
 
 @app.route("/weather_info")
@@ -184,6 +195,8 @@ def show_data():
     </body>
     </html>
     """
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)

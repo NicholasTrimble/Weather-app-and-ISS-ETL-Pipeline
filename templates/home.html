@@ -19,6 +19,12 @@
         .nav-buttons button { padding: 10px 20px; margin-right: 10px; font-size: 1em; cursor: pointer; }
     </style>
 </head>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+
 <body>
 
 <!-- Header -->
@@ -49,9 +55,9 @@
 <!-- Latest ISS -->
 <section class="card">
     <h2>Latest ISS Entries</h2>
-    <pre id="latestData">
-Fetching data...
-    </pre>
+    <div id="latestData">
+        
+    </div>
 </section>
 
 <!-- Subscribe -->
@@ -74,28 +80,39 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     window.showAlert = showAlert;
 
-    // ----- Leaflet Map for News -----
-    const map = L.map('map').setView([20, 0], 2); // world view
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+// ----- Leaflet Map for News -----
+const map = L.map('map').setView([20, 0], 2); // world view
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-    let cities = [];
-    let currentCityIndex = 0;
+let cities = [];
+let currentCityIndex = 0;
 
-    // Load cities.json
-    fetch('{{ url_for("static", filename="cities.json") }}')
-        .then(res => res.json())
-        .then(data => {
-            cities = data;
+// Create a marker cluster group
+const markers = L.markerClusterGroup({
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
+});
 
-            cities.forEach((city, index) => {
-                const marker = L.marker([city.lat, city.lon]).addTo(map);
-                marker.bindPopup(`<b>${city.name}, ${city.country}</b><br>
-                    <button onclick="fetchNews(${index})">Show News</button>`);
-            });
-        })
-        .catch(err => console.error("Error loading cities.json:", err));
+// Load cities.json
+fetch('{{ url_for("static", filename="cities.json") }}')
+    .then(res => res.json())
+    .then(data => {
+        cities = data;
+
+        cities.forEach((city, index) => {
+            const marker = L.marker([city.lat, city.lon]);
+            marker.bindPopup(`<b>${city.name}, ${city.country}</b><br>
+                              <button onclick="fetchNews(${index})">Show News</button>`);
+            markers.addLayer(marker); // Add marker to cluster group
+        });
+
+        map.addLayer(markers); // Add the cluster group to the map
+    })
+    .catch(err => console.error("Error loading cities.json:", err));
+
 
     // Fetch news via Flask /news route
     window.fetchNews = function(index) {
@@ -132,6 +149,21 @@ document.addEventListener("DOMContentLoaded", function() {
         fetchNews(nextIndex);
     });
 });
+</script>
+
+<script>
+fetch("/iss_position")
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById("latestData").innerHTML = `
+            <p>Latitude: ${data.latitude}</p>
+            <p>Longitude: ${data.longitude}</p>
+            <p>Timestamp: ${data.timestamp}</p>
+        `;
+    })
+    .catch(error => {
+        document.getElementById("latestData").innerHTML = "Failed to load ISS data.";
+    });
 </script>
 
 </body>
