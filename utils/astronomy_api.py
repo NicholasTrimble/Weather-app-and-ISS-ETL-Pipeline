@@ -17,9 +17,9 @@ def generate_star_chart(latitude: float, longitude: float, date: str = None):
     if date is None:
         date = datetime.utcnow().date().isoformat()
 
-    # payload for a clearer, zoomed-in view
+
     payload = {
-        "style": "navy",  # "inverted" or "red" also look good at night
+        "style": "navy", 
         "observer": {
             "latitude": float(latitude),
             "longitude": float(longitude),
@@ -28,10 +28,10 @@ def generate_star_chart(latitude: float, longitude: float, date: str = None):
         "view": {
     "type": "constellation",
     "parameters": {
-        "constellation": "ori"  # Orion
+        "constellation": "ori"  
     }
 },
-                "zoom": 5  # 1 = wide, 10 = close zoom — try 5 to 8 for clarity
+                "zoom": 5  
             }
         
     
