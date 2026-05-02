@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto p-6">
+    <h1 class="text-3xl font-bold mb-6 text-blue-400">Latest ISS Data</h1>
+    <p class="text-gray-300">This table is updated every 10 seconds.</p>
+    
+    <div class="bg-gray-900 border border-gray-800 rounded-lg shadow-xl overflow-hidden">
+        <table class="w-full text-left">
+            <thead class="bg-gray-800">
+                <tr>
+                    <th class="p-4">Timestamp</th>
+                    <th class="p-4">Latitude</th>
+                    <th class="p-4">Longitude</th>
+                    <th class="p-4">Overhead</th>
+                    <th class="p-4">Night</th>
+                </tr>
+            </thead>
+            <tbody id="iss-table-body">
+                {% for row in rows %}
+                    <tr class="border-t border-gray-800">
+                        <td class="p-4">{{ row[0] }}</td>
+                        <td class="p-4">{{ row[1] }}</td>
+                        <td class="p-4">{{ row[2] }}</td>
+                        <td class="p-4">{{ row[3] }}</td>
+                        <td class="p-4">{{ row[4] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function updateTable() {
+        fetch("/iss_position")
+            .then(r => r.json())
+            .then(d => {
+                const tbody = document.getElementById("iss-table-body");
+                const newRow = `
+                    <tr class="border-t border-gray-800 bg-blue-900/20">
+                        <td class="p-4">${d.timestamp}</td>
+                        <td class="p-4">${d.latitude}</td>
+                        <td class="p-4">${d.longitude}</td>
+                        <td class="p-4">N/A</td>
+                        <td class="p-4">N/A</td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('afterbegin', newRow);
+            })
+            .catch(err => console.error("Failed to fetch ISS data:", err));
+    }
+
+    // Update every 10 seconds
+    setInterval(updateTable, 10000);
+</script>
+{% endblock %}

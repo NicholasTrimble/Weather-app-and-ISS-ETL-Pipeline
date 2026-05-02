@@ -3,27 +3,31 @@ from datetime import datetime, timezone
 import time
 import schedule
 from database import init_db, save_to_db
+from zoneinfo import ZoneInfo
 
 MY_LAT = 51.507351
 MY_LONG = -0.127758
 
 def fetch_iss_position():
+    import requests
+    from datetime import datetime, timezone
+
     try:
         response = requests.get("http://api.open-notify.org/iss-now.json", timeout=10)
         response.raise_for_status()
         data = response.json()
-        return {
-            "latitude": float(data["iss_position"]["latitude"]),
-            "longitude": float(data["iss_position"]["longitude"]),
-            "timestamp": datetime.now(timezone.utc)
-        }
+        latitude = round(float(data["iss_position"]["latitude"]), 2)
+        longitude = round(float(data["iss_position"]["longitude"]), 2)
+        central = ZoneInfo("America/Chicago")
+        timestamp = datetime.now(tz=central).strftime("%b %d, %Y • %I:%M:%S %p %Z")
+
     except:
-        # fallback dummy data
-        return {
-            "latitude": 51.5,
-            "longitude": -0.1,
-            "timestamp": datetime.now(timezone.utc)
-        }
+        # fallback
+        latitude = 51.5
+        longitude = -0.1
+        timestamp = datetime.now(timezone.utc).isoformat()
+
+    return latitude, longitude, timestamp
 
 def check_overhead(lat, long, observer_lat=MY_LAT, observer_long=MY_LONG):
     return observer_lat - 5 <= lat <= observer_lat + 5 and observer_long - 5 <= long <= observer_long + 5
@@ -42,11 +46,14 @@ def check_night(observer_lat=MY_LAT, observer_long=MY_LONG):
         return False
 
 def run_etl():
-    iss_data = fetch_iss_position()
+    lat, lon, time = fetch_iss_position()
+    iss_data = {
+        "latitude": lat,
+        "longitude": lon,
+        "timestamp": time
+    }
     iss_data["overhead"] = check_overhead(iss_data["latitude"], iss_data["longitude"])
-    iss_data["is_night"] = check_night()
-    save_to_db(iss_data)
-    print(f"ETL run complete: {iss_data}")
+    
 
 
 def stars_above_location(latitude, longitude):

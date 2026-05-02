@@ -1,170 +1,140 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Skypulse Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    
-    <!-- Leaflet CSS/JS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% extends "base.html" %}
 
-    <style>
-        /* Map and news container */
-        #map { height: 500px; margin-bottom: 15px; border: 2px solid #1e90ff; border-radius: 8px; }
-        #newsContainer { background-color: #111; padding: 15px; border-radius: 8px; margin-top: 10px; }
-        #newsContainer h3 { margin-top: 0; }
-        .card { background-color: #222; padding: 20px; margin: 20px 0; border-radius: 12px; width: 90%; max-width: 900px; }
-        .nav-buttons { margin: 20px 0; }
-        .nav-buttons button { padding: 10px 20px; margin-right: 10px; font-size: 1em; cursor: pointer; }
-    </style>
-</head>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
-
-
-<body>
-
-<!-- Header -->
+{% block content %}
 <header>
-    <h1>Skypulse</h1>
-    <p>Track the ISS, view weather, and explore news by city.</p>
+    <h1>SkyPulse</h1>
+    <p>Real-time ISS Tracking & Weather News</p>
 </header>
 
-<!-- Navigation -->
-<div class="nav-buttons">
-    <a href="/data"><button>Latest ISS Data</button></a>
-    <a href="/map"><button>Interactive Weather Map</button></a>
+<nav class="nav-buttons">
+    <a href="/"><button>Home</button></a>
+    <a href="/data"><button>Live Data</button></a>
+</nav>
+
+<div class="dashboard-grid">
+    <section class="card">
+        <h2>Regional Radar</h2>
+        <div id="map"></div>
+        <button id="nextCityNewsBtn" style="margin-top: 15px; width: 100%;">
+            Show Next Largest City News
+        </button>
+    </section>
+
+    <aside>
+        <section class="card">
+            <h2>Current ISS Position</h2>
+            <div id="latestData">
+                <p>Loading ISS data...</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>7-Day Forecast</h2>
+            <div id="forecastContainer" class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <p class="text-gray-400">Requesting your location for forecast...</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Local News</h2>
+            <div id="newsContainer">
+                <p>Click a city on the map to see news.</p>
+            </div>
+        </section>
+    </aside>
 </div>
 
-<!-- News Map -->
-<section class="card">
-    <h2>Explore Local News</h2>
-    <p>Click a major city on the map to fetch its latest news headlines.</p>
-    <p>You can also click "Next Largest City" to cycle through nearby cities.</p>
-
-    <div id="map"></div>
-    <button id="nextCityNewsBtn">Show Next Largest City News</button>
-    <div id="newsContainer">
-        <p>Click a city on the map to see news headlines here.</p>
-    </div>
-</section>
-
-<!-- Latest ISS -->
-<section class="card">
-    <h2>Latest ISS Entries</h2>
-    <div id="latestData">
-        
-    </div>
-</section>
-
-<!-- Subscribe -->
-<section class="card">
-    <h2>Subscribe for Updates</h2>
-    <form action="/subscribe" method="POST" onsubmit="showAlert()">
-        <input type="email" name="email" placeholder="your_email@example.com" required>
-        <button type="submit">Subscribe</button>
-    </form>
-</section>
-
-<footer>
-    <p>CityDataPortal &copy; 2026</p>
+<footer style="margin-top: 40px; text-align: center; color: #94a3b8;">
+    <p>SkyPulse Dashboard &copy; 2026</p>
 </footer>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    function showAlert() {
-        alert("Thank you! You are subscribed.");
-    }
-    window.showAlert = showAlert;
+    // --- MAP LOGIC ---
+    const map = L.map('map').setView([20, 0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
 
-// ----- Leaflet Map for News -----
-const map = L.map('map').setView([20, 0], 2); // world view
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
-}).addTo(map);
+    let cities = [];
+    let currentCityIndex = 0;
+    const markers = L.markerClusterGroup();
 
-let cities = [];
-let currentCityIndex = 0;
+    // --- FORECAST LOGIC ---
+    navigator.geolocation.getCurrentPosition(position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
 
-// Create a marker cluster group
-const markers = L.markerClusterGroup({
-    spiderfyOnMaxZoom: true,
-    showCoverageOnHover: false,
-    zoomToBoundsOnClick: true
-});
+        fetch(`/forecast?lat=${lat}&lon=${lon}`)
+            .then(r => r.json())
+            .then(data => {
+                const container = document.getElementById("forecastContainer");
+                container.innerHTML = ""; 
 
-// Load cities.json
-fetch('{{ url_for("static", filename="cities.json") }}')
-    .then(res => res.json())
-    .then(data => {
-        cities = data;
+                // Filter: Get one reading for every 24-hour period (index 0, 8, 16...)
+                const dailyForecast = data.list.filter((reading, index) => index % 8 === 0);
 
-        cities.forEach((city, index) => {
-            const marker = L.marker([city.lat, city.lon]);
-            marker.bindPopup(`<b>${city.name}, ${city.country}</b><br>
-                              <button onclick="fetchNews(${index})">Show News</button>`);
-            markers.addLayer(marker); // Add marker to cluster group
+                dailyForecast.forEach(day => {
+                    const date = new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+                    container.innerHTML += `
+                        <div class="forecast-day bg-slate-900 p-3 rounded text-center border border-gray-700">
+                            <div class="text-xs text-blue-400">${date}</div>
+                            <img src="http://openweathermap.org/img/wn/${day.weather[0].icon}.png" alt="weather" class="mx-auto" style="width: 40px;">
+                            <div class="font-bold text-lg">${Math.round(day.main.temp)}°F</div>
+                        </div>
+                    `;
+                });
+            })
+            .catch(err => {
+                document.getElementById("forecastContainer").innerHTML = "<p>Failed to load forecast.</p>";
+            });
+    }, error => {
+        document.getElementById("forecastContainer").innerHTML = "<p>Location access denied.</p>";
+    });
+
+    // --- CITY NEWS LOGIC ---
+    fetch('{{ url_for("static", filename="cities.json") }}')
+        .then(res => res.json())
+        .then(data => {
+            cities = data;
+            cities.forEach((city, index) => {
+                const marker = L.marker([city.lat, city.lon]);
+                marker.bindPopup(`<b>${city.name}, ${city.country}</b><br><button onclick="fetchNews(${index})">Show News</button>`);
+                markers.addLayer(marker);
+            });
+            map.addLayer(markers);
         });
 
-        map.addLayer(markers); // Add the cluster group to the map
-    })
-    .catch(err => console.error("Error loading cities.json:", err));
-
-
-    // Fetch news via Flask /news route
     window.fetchNews = function(index) {
         if(!cities[index]) return;
         const city = cities[index].name;
         currentCityIndex = index;
-
         fetch(`/news?city=${city}`)
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById("newsContainer");
-                container.innerHTML = `<h3>News for ${city}</h3>`;
-                if(data.headlines.length === 0) {
-                    container.innerHTML += "<p>No news found.</p>";
-                    return;
-                }
-                data.headlines.forEach(headline => {
-                    const p = document.createElement("p");
-                    p.textContent = "• " + headline;
-                    container.appendChild(p);
-                });
-            })
-            .catch(err => {
-                const container = document.getElementById("newsContainer");
-                container.innerHTML = `<p>Error fetching news for ${city}.</p>`;
-                console.error(err);
+                container.innerHTML = `<h3 class="text-blue-400 font-bold mb-2">News for ${city}</h3>`;
+                data.headlines.forEach(h => container.innerHTML += `<p class="text-sm mb-1">• ${h}</p>`);
             });
     };
 
-    // Next Largest City button
-    document.getElementById("nextCityNewsBtn").addEventListener("click", function() {
-        if(cities.length === 0) return;
-        const nextIndex = (currentCityIndex + 1) % cities.length;
-        fetchNews(nextIndex);
+    document.getElementById("nextCityNewsBtn").addEventListener("click", () => {
+        if(cities.length > 0) fetchNews((currentCityIndex + 1) % cities.length);
     });
+
+    // --- ISS POSITION FETCH ---
+    function updateISS() {
+        fetch("/iss_position")
+            .then(r => r.json())
+            .then(d => {
+                document.getElementById("latestData").innerHTML = 
+                    `<p>Lat: ${d.latitude} | Lon: ${d.longitude}</p><p class="text-xs text-gray-500">${d.timestamp}</p>`;
+            })
+            .catch(() => document.getElementById("latestData").innerHTML = "Failed to load ISS data.");
+    }
+    
+    updateISS();
+    setInterval(updateISS, 5000);
 });
 </script>
-
-<script>
-fetch("/iss_position")
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("latestData").innerHTML = `
-            <p>Latitude: ${data.latitude}</p>
-            <p>Longitude: ${data.longitude}</p>
-            <p>Timestamp: ${data.timestamp}</p>
-        `;
-    })
-    .catch(error => {
-        document.getElementById("latestData").innerHTML = "Failed to load ISS data.";
-    });
-</script>
-
-</body>
-</html>
+{% endblock %}

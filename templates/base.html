@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-950 text-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkyPulse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=1.0">
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <nav class="p-6 flex gap-6 justify-center border-b border-gray-800">
+        <a href="/" class="text-blue-400 hover:text-white transition">Home</a>
+        <a href="/data" class="text-blue-400 hover:text-white transition">Live ISS Data</a>
+        <a href="/map" class="text-blue-400 hover:text-white transition">Interactive WeatherMap</a>
+    </nav>
+
+    <main class="flex-grow">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="p-8 text-center text-gray-500 border-t border-gray-800">
+        <p>SkyPulse &copy; 2026</p>
+    </footer>
+
+</body>
+</html>
