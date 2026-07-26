@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-gray-950 text-gray-100">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,19 +17,17 @@
 </head>
 <body class="min-h-screen flex flex-col">
 
-
-
-    <nav class="p-6 flex gap-6 justify-center border-b border-gray-800">
-        <a href="/" class="text-blue-400 hover:text-white transition">Home</a>
-        <a href="/data" class="text-blue-400 hover:text-white transition">Live ISS Data</a>
-        <a href="/map" class="text-blue-400 hover:text-white transition">Interactive WeatherMap</a>
+    <nav class="nav-bar">
+        <a href="/" class="nav-btn">Home</a>
+        <a href="/data" class="nav-btn">Live ISS Data</a>
+        <a href="/map" class="nav-btn">Interactive WeatherMap</a>
     </nav>
 
     <main class="flex-grow">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="p-8 text-center text-gray-500 border-t border-gray-800">
+    <footer class="p-8 text-center border-t border-slate-400/30 text-slate-600">
         <p>SkyPulse &copy; 2026</p>
     </footer>
 
