@@ -60,6 +60,16 @@ header h1 {
     color: #0369A1;
 }
 
+/* Dual-Tone Logo Styling */
+header h1 .logo-sky {
+    color: #FFFFFF; /* Crisp White */
+    text-shadow: 0 2px 4px rgba(15, 23, 42, 0.15); /* Soft contrast shadow */
+}
+
+header h1 .logo-pulse {
+    color: #0284C7; /* Ocean Blue */
+}
+
 header p {
     margin-top: 0.25rem;
     color: var(--text-muted);
@@ -239,4 +249,8 @@ tr:hover td {
 
 #newsContainer p:last-child {
     border-bottom: none;
+}
+
+.leaflet-control-attribution {
+    display: none !important;
 }

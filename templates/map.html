@@ -3,18 +3,56 @@
 {% block content %}
 <style>
     #map { height: calc(100vh - 140px); width: 100%; }
+    
+    /* Sleek Pulsing Glow Effect Around ISS Icon */
+    .iss-marker-container {
+        position: relative;
+    }
+    .iss-pulsing-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 48px;
+        height: 48px;
+        margin-top: -24px;
+        margin-left: -24px;
+        border-radius: 50%;
+        background: rgba(2, 132, 199, 0.35);
+        box-shadow: 0 0 12px rgba(2, 132, 199, 0.8);
+        animation: issPulse 2s infinite ease-out;
+        pointer-events: none;
+    }
+    @keyframes issPulse {
+        0% { transform: scale(0.6); opacity: 1; }
+        100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* Polished Weather Popup Styling */
+    .leaflet-popup-content-wrapper {
+        background-color: #E2E8F0 !important;
+        color: #0F172A !important;
+        border: 1px solid #94A3B8;
+        border-radius: 8px !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15) !important;
+    }
+    .leaflet-popup-tip {
+        background-color: #E2E8F0 !important;
+    }
     .popup-button {
-        margin-top: 6px;
-        padding: 6px 10px;
-        font-size: 0.9rem;
+        margin-top: 8px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        font-weight: 700;
         cursor: pointer;
-        background-color: #2563eb;
+        background-color: #0284C7;
         color: white;
-        border-radius: 4px;
+        border-radius: 6px;
         border: none;
+        width: 100%;
+        transition: background-color 0.2s ease;
     }
     .popup-button:hover {
-        background-color: #1d4ed8;
+        background-color: #0369A1;
     }
 </style>
 
@@ -42,7 +80,7 @@
         bounds: worldBounds
     }).addTo(map);
 
-    // --- ANIMATED RADAR OVERLAY (FIXED FOR ZOOM) ---
+    // --- ANIMATED RADAR OVERLAY ---
     let radarLayers = [];
     let currentFrameIndex = 0;
 
@@ -50,7 +88,7 @@
         .then(response => response.json())
         .then(data => {
             const host = data.host;
-            const frames = data.radar.past.slice(-5); // Take last 5 radar snapshots
+            const frames = data.radar.past.slice(-5);
 
             frames.forEach(frame => {
                 const layer = L.tileLayer(`${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`, {
@@ -58,7 +96,7 @@
                     opacity: 0,
                     noWrap: true,
                     bounds: worldBounds,
-                    maxNativeZoom: 7, // CRITICAL FIX: Upscales tiles when zoomed in past level 7
+                    maxNativeZoom: 7,
                     maxZoom: 19
                 });
                 layer.addTo(map);
@@ -69,6 +107,7 @@
                 radarLayers[0].setOpacity(0.55);
                 
                 setInterval(() => {
+                    if (radarLayers.length === 0) return;
                     radarLayers[currentFrameIndex].setOpacity(0);
                     currentFrameIndex = (currentFrameIndex + 1) % radarLayers.length;
                     radarLayers[currentFrameIndex].setOpacity(0.55);
@@ -77,11 +116,16 @@
         })
         .catch(err => console.log("Radar fetch error:", err));
 
-    // --- ISS MARKER LOGIC (FIXED BLINKING/JUMPING ISSUE) ---
+    // --- ISS MARKER LOGIC ---
     let issMarker = null;
 
-    const issIcon = L.icon({
-        iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/International_Space_Station.svg',
+    // Custom DivIcon featuring the SVG ISS and a smooth glowing pulse ring underneath
+    const issIcon = L.divIcon({
+        className: 'iss-marker-container',
+        html: `
+            <div class="iss-pulsing-glow"></div>
+            <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/International_Space_Station.svg" style="width: 50px; height: 32px; position: relative; z-index: 2;" />
+        `,
         iconSize: [50, 32],
         iconAnchor: [25, 16]
     });
@@ -90,15 +134,15 @@
         fetch("/iss_position")
             .then(response => response.json())
             .then(data => {
-                // Ensure we have valid numeric coordinates before moving/creating marker
+                // Ignore bad data or null island coords to prevent random jumping
                 if (data.latitude !== undefined && data.longitude !== undefined) {
+                    if (data.latitude === 0 && data.longitude === 0) return;
+                    
                     const newLatLng = [data.latitude, data.longitude];
                     
                     if (!issMarker) {
-                        // Create marker only on first successful fetch
                         issMarker = L.marker(newLatLng, { icon: issIcon }).addTo(map);
                     } else {
-                        // Smoothly update existing marker location
                         issMarker.setLatLng(newLatLng);
                     }
                 }
@@ -106,7 +150,6 @@
             .catch(err => console.log("ISS fetch error:", err));
     }
 
-    // Fetch immediately and update every 5 seconds
     updateISSPosition();
     setInterval(updateISSPosition, 5000);
 
@@ -127,10 +170,11 @@
                 const btnId = `show-sky-btn-${safeLat}-${safeLon}`;
 
                 const popupContent = `
-                    <div>
-                        <b>Location:</b> ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>
-                        <b>Temperature:</b> ${tempC}°C / ${tempF}°F<br>
-                        <b>Cloud Coverage:</b> ${cloud}%<br>
+                    <div style="font-family: sans-serif; line-height: 1.6;">
+                        <b style="color: #0284C7; font-size: 0.95rem;">Location Data</b><br>
+                        <b>Coords:</b> ${lat.toFixed(4)}, ${lon.toFixed(4)}<br>
+                        <b>Temp:</b> ${tempC}°C / ${tempF}°F<br>
+                        <b>Cloud Cover:</b> ${cloud}%<br>
                         <b>Visibility:</b> ${visibility}<br>
                         <button id="${btnId}" class="popup-button">Show Night Sky</button>
                     </div>
