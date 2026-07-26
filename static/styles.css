@@ -254,3 +254,33 @@ tr:hover td {
 .leaflet-control-attribution {
     display: none !important;
 }
+
+/* --- MOBILE & SMALL SCREEN RESPONSIVENESS --- */
+@media (max-width: 640px) {
+    /* Reduce container padding on narrow viewports */
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        padding: 12px;
+        gap: 16px;
+    }
+
+    .card {
+        padding: 16px;
+    }
+
+    header h1 {
+        font-size: 2rem;
+    }
+
+    /* Wrap tables to enable smooth horizontal swipe on mobile */
+    .table-container {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Map height fix for mobile browser bars */
+    #map {
+        height: 350px;
+    }
+}
