@@ -1,148 +1,242 @@
-/* Wunderground-Inspired Modern Dashboard CSS */
+/* Weather Underground-Inspired Atmospheric Blue CSS */
 :root {
-    --bg-main: #151b2b;        /* Deep Space Blue */
-    --bg-card: #212c43;        /* Dark Slate Card */
-    --accent-blue: #0ea5e9;    /* Sky Blue */
-    --text-white: #f8fafc;
-    --text-muted: #94a3b8;
-    --border: #334155;
+    --bg-main: #CBD5E1;          /* Soft Muted Sky Slate */
+    --bg-card: #E2E8F0;          /* Atmospheric Light Blue-Gray Card */
+    --bg-card-hover: #DBEFEF;    /* Soft Tint Hover */
+    --header-bg: #DCE5EE;        /* Header Background */
+    --accent-blue: #0284C7;      /* Primary Ocean Blue */
+    --accent-sky: #38BDF8;       /* Bright Accent Sky */
+    --accent-light: #BAE6FD;     /* Soft Blue Highlight */
+    --text-primary: #0F172A;     /* High-Contrast Deep Slate */
+    --text-muted: #475569;       /* Slate Secondary Text */
+    --border: #94A3B8;           /* Crisp Slate Border */
+    --border-hover: #0284C7;     /* Hover Border */
+    --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.1);
+    --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+    background: #94A3B8;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-blue);
 }
 
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-main);
-    color: var(--text-white);
+    background-image: 
+        radial-gradient(at 0% 0%, #E2E8F0 0px, transparent 50%),
+        radial-gradient(at 100% 100%, #94A3B8 0px, transparent 50%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    line-height: 1.5;
 }
 
 /* Header & Nav */
 header {
-    background-color: #0f1423;
-    padding: 1.5rem;
-    border-bottom: 4px solid var(--accent-blue);
+    background: var(--header-bg);
+    border-bottom: 2px solid var(--border);
+    padding: 2rem 1.5rem 1.25rem 1.5rem;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
 }
 
-.nav-bar {
+header h1 {
+    font-size: 2.75rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.025em;
+    color: #0369A1;
+}
+
+header p {
+    margin-top: 0.25rem;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+/* Navigation */
+.nav-bar, .nav-buttons {
     display: flex;
     justify-content: center;
-    gap: 20px;
-    background: var(--bg-card);
-    padding: 10px;
+    gap: 12px;
+    padding: 12px;
     margin-bottom: 20px;
-    border-bottom: 1px solid var(--border);
 }
 
-.nav-bar a {
-    color: var(--text-muted);
+.nav-bar a, .nav-buttons a button {
+    color: var(--text-primary);
     text-transform: uppercase;
     font-weight: 700;
     font-size: 0.8rem;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    padding: 8px 18px;
+    border-radius: 6px;
+    background: #E2E8F0;
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
 }
 
-/* The Dashboard Grid */
+.nav-bar a:hover, .nav-buttons a button:hover {
+    color: #FFFFFF;
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+
+/* Dashboard Grid Structure */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 20px;
-    padding: 20px;
-    max-width: 1400px;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 24px;
+    padding: 24px;
+    max-width: 1440px;
     margin: 0 auto;
 }
 
-/* Professional Data Cards */
+/* Muted Light Blue Data Cards */
 .card {
-    background-color: var(--bg-card);
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    padding: 20px;
-    border-radius: 2px; 
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    padding: 24px;
+    border-radius: 12px;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-md);
 }
 
 .card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    transform: translateY(-3px);
+    border-color: var(--border-hover);
 }
 
-.card-title {
-    font-size: 0.75rem;
+.card h2, .card-title {
+    font-size: 0.85rem;
     text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 15px;
-    font-weight: 700;
-    border-bottom: 1px solid var(--border);
+    color: var(--accent-blue);
+    letter-spacing: 0.08em;
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-weight: 800;
+    border-bottom: 2px solid var(--border);
     padding-bottom: 10px;
 }
 
-/* Data Presentation */
+/* --- FIXED HIGH-CONTRAST DATA TABLE FOR /data PAGE --- */
 table {
     width: 100%;
     border-collapse: collapse;
+    background: #F1F5F9;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
 }
 
 th {
     text-align: left;
-    color: var(--text-muted);
-    font-size: 0.7rem;
-    padding: 8px 0;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 12px;
+    border-bottom: 2px solid var(--border);
+    background: #CBD5E1;
+    font-weight: 800;
 }
 
-td {
-    padding: 8px 0;
+/* Force dark text and high-contrast background on all table cells and dynamic rows */
+td, tr td, tbody tr td {
+    padding: 12px;
     border-bottom: 1px solid var(--border);
-    font-family: monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.875rem;
+    color: #0F172A !important;  /* Forces dark text visibility */
+    background-color: #F1F5F9 !important; /* Replaces dark blue dynamically injected backgrounds */
 }
 
-/* Map specific styling */
+/* Highlight row on hover without obscuring text */
+tr:hover td {
+    background-color: #BAE6FD !important;
+}
+
+/* Map Container */
 #map {
-    height: 400px;
+    height: 420px;
     width: 100%;
-    background-color: #1e293b;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background-color: #CBD5E1;
+    overflow: hidden;
 }
 
-header h1 {
-    font-size: 3rem;
-    font-weight: 700;
-    margin: 0;
-    color: #ffffff;
-}
-
-#nextCityNewsBtn {
+/* Interactive Action Buttons */
+#nextCityNewsBtn, .popup-button {
     margin-top: 15px;
     width: 100%;
-    background-color: var(--accent-blue);
-    color: var(--bg-main);
+    background: #0284C7;
+    color: #FFFFFF;
     border: none;
-    padding: 10px 20px;
-    border-radius: 4px;
+    padding: 12px 20px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: 0.2s;
-    font-weight: 500;
+    font-weight: 700;
+    font-size: 0.875rem;
+    letter-spacing: 0.025em;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
 }
 
-nextCityNewsBtn:hover {
-    background-color: var(--accent-blue);
-    color: var(--bg-main);
+#nextCityNewsBtn:hover, .popup-button:hover {
+    background: #0369A1;
 }
 
-#newsContainer {
-    background: var(--bg-card); 
-    backdrop-filter: blur(8px);
+/* Forecast Cards */
+.forecast-day {
+    background: #F1F5F9;
     border: 1px solid var(--border);
-    border-radius: 4px; 
-    padding: 25px;
-    max-height: 400px;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.forecast-day:hover {
+    border-color: var(--accent-blue);
+    background: #E2E8F0;
+}
+
+/* News Feed Container */
+#newsContainer {
+    background: #F1F5F9;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    max-height: 380px;
     overflow-y: auto;
 }
 
-.today-active {
-    border: 2px solid var(--accent);
+#newsContainer p {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
 }
 
-.forecast-day {
-    background-color: rgba(30, 41, 59, 0.5); /* Slate-900 with transparency */
-    border: 1px solid var(--border);
-    padding: 10px;
-    border-radius: 8px;
-    text-align: center;
+#newsContainer p:last-child {
+    border-bottom: none;
 }

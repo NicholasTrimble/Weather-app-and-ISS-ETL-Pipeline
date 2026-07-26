@@ -2,7 +2,6 @@
 
 {% block content %}
 <style>
-    /* We adjust height to ensure it fits nicely between the nav and footer */
     #map { height: calc(100vh - 140px); width: 100%; }
     .popup-button {
         margin-top: 6px;
@@ -12,38 +11,104 @@
         background-color: #2563eb;
         color: white;
         border-radius: 4px;
+        border: none;
+    }
+    .popup-button:hover {
+        background-color: #1d4ed8;
     }
 </style>
 
 <div id="map"></div>
 
 <script>
-    // Since we added Leaflet to base.html, we just write the logic here
-    var map = L.map('map').setView([51.507351, -0.127758], 5);
+    // Define world bounds to prevent endless horizontal scrolling
+    const worldBounds = L.latLngBounds(
+        L.latLng(-85, -180),
+        L.latLng(85, 180)
+    );
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // Initialize Map
+    const map = L.map('map', {
+        minZoom: 2,
+        maxBounds: worldBounds,
+        maxBoundsViscosity: 1.0
+    }).setView([39.8283, -98.5795], 4);
+
+    // Base Street Map Layer
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri',
         maxZoom: 19,
-        attribution: '© OpenStreetMap'
+        noWrap: true,
+        bounds: worldBounds
     }).addTo(map);
 
-    // ISS marker
-    var issMarker = L.marker([0, 0], {icon: L.icon({
+    // --- ANIMATED RADAR OVERLAY (FIXED FOR ZOOM) ---
+    let radarLayers = [];
+    let currentFrameIndex = 0;
+
+    fetch("https://api.rainviewer.com/public/weather-maps.json")
+        .then(response => response.json())
+        .then(data => {
+            const host = data.host;
+            const frames = data.radar.past.slice(-5); // Take last 5 radar snapshots
+
+            frames.forEach(frame => {
+                const layer = L.tileLayer(`${host}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`, {
+                    attribution: '&copy; RainViewer',
+                    opacity: 0,
+                    noWrap: true,
+                    bounds: worldBounds,
+                    maxNativeZoom: 7, // CRITICAL FIX: Upscales tiles when zoomed in past level 7
+                    maxZoom: 19
+                });
+                layer.addTo(map);
+                radarLayers.push(layer);
+            });
+
+            if (radarLayers.length > 0) {
+                radarLayers[0].setOpacity(0.55);
+                
+                setInterval(() => {
+                    radarLayers[currentFrameIndex].setOpacity(0);
+                    currentFrameIndex = (currentFrameIndex + 1) % radarLayers.length;
+                    radarLayers[currentFrameIndex].setOpacity(0.55);
+                }, 750);
+            }
+        })
+        .catch(err => console.log("Radar fetch error:", err));
+
+    // --- ISS MARKER LOGIC (FIXED BLINKING/JUMPING ISSUE) ---
+    let issMarker = null;
+
+    const issIcon = L.icon({
         iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/International_Space_Station.svg',
         iconSize: [50, 32],
         iconAnchor: [25, 16]
-    })}).addTo(map);
+    });
 
-    // Update ISS position
     function updateISSPosition() {
         fetch("/iss_position")
             .then(response => response.json())
             .then(data => {
-                issMarker.setLatLng([data.latitude, data.longitude]);
+                // Ensure we have valid numeric coordinates before moving/creating marker
+                if (data.latitude !== undefined && data.longitude !== undefined) {
+                    const newLatLng = [data.latitude, data.longitude];
+                    
+                    if (!issMarker) {
+                        // Create marker only on first successful fetch
+                        issMarker = L.marker(newLatLng, { icon: issIcon }).addTo(map);
+                    } else {
+                        // Smoothly update existing marker location
+                        issMarker.setLatLng(newLatLng);
+                    }
+                }
             })
             .catch(err => console.log("ISS fetch error:", err));
     }
-    setInterval(updateISSPosition, 5000);
+
+    // Fetch immediately and update every 5 seconds
     updateISSPosition();
+    setInterval(updateISSPosition, 5000);
 
     // Weather on click logic
     map.on('click', function(e) {

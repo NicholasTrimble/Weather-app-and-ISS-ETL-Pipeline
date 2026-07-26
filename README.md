@@ -1,5 +1,5 @@
-![Dashboard](skypulsehome.png)
-![Dashboard](Skypulse.png)
+![Dashboard](static/images/skypulsehome.png)
+![Dashboard](static/images/Skypulse.png)
 
 
 

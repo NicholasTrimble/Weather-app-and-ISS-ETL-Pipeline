@@ -13,7 +13,7 @@
 
 <div class="dashboard-grid">
     <section class="card">
-        <h2>Regional Radar</h2>
+        <h2>City News Radar</h2>
         <div id="map"></div>
         <button id="nextCityNewsBtn" style="margin-top: 15px; width: 100%;">
             Show Next Largest City News
@@ -28,8 +28,9 @@
             </div>
         </section>
 
+        <!-- Dynamic Header for Forecast Title -->
         <section class="card">
-            <h2>7-Day Forecast</h2>
+            <h2 id="forecastHeader">5-Day Forecast</h2>
             <div id="forecastContainer" class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <p class="text-gray-400">Requesting your location for forecast...</p>
             </div>
@@ -50,17 +51,26 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-    // --- MAP LOGIC ---
-    const map = L.map('map').setView([20, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+    // --- MAP SETUP ---
+    const worldBounds = L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180));
+    const map = L.map('map', {
+        minZoom: 2,
+        maxBounds: worldBounds,
+        maxBoundsViscosity: 1.0
+    }).setView([39.8283, -98.5795], 4);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom',
+    maxZoom: 19,
+    noWrap: true,
+    bounds: worldBounds
+}).addTo(map);
 
     let cities = [];
     let currentCityIndex = 0;
     const markers = L.markerClusterGroup();
 
-    // --- FORECAST LOGIC ---
+    // --- ENHANCED FORECAST LOGIC ---
     navigator.geolocation.getCurrentPosition(position => {
         const lat = position.coords.latitude;
         const lon = position.coords.longitude;
@@ -69,21 +79,43 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(r => r.json())
             .then(data => {
                 const container = document.getElementById("forecastContainer");
+                const header = document.getElementById("forecastHeader");
                 container.innerHTML = ""; 
 
-                // Filter: Get one reading for every 24-hour period (index 0, 8, 16...)
-                const dailyForecast = data.list.filter((reading, index) => index % 8 === 0);
+                if (data.list && data.city) {
+                    // Update header with the actual City Name & Country
+                    header.textContent = `Forecast for ${data.city.name}, ${data.city.country}`;
 
-                dailyForecast.forEach(day => {
-                    const date = new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
-                    container.innerHTML += `
-                        <div class="forecast-day bg-slate-900 p-3 rounded text-center border border-gray-700">
-                            <div class="text-xs text-blue-400">${date}</div>
-                            <img src="http://openweathermap.org/img/wn/${day.weather[0].icon}.png" alt="weather" class="mx-auto" style="width: 40px;">
-                            <div class="font-bold text-lg">${Math.round(day.main.temp)}°F</div>
-                        </div>
-                    `;
-                });
+                    // Extract 1 forecast slot per day (every 24 hrs / 8 slots)
+                    const dailyForecast = data.list.filter((reading, index) => index % 8 === 0);
+
+                    dailyForecast.forEach(day => {
+                        const date = new Date(day.dt * 1000).toLocaleDateString('en-US', { weekday: 'short' });
+                        const temp = Math.round(day.main.temp);
+                        const feelsLike = Math.round(day.main.feels_like);
+                        const desc = day.weather[0].description;
+                        const humidity = day.main.humidity;
+                        const wind = Math.round(day.wind.speed);
+
+                        container.innerHTML += `
+                            <div class="forecast-day bg-slate-900 p-3 rounded text-center border border-gray-700">
+                                <div class="text-xs text-blue-400 font-bold">${date}</div>
+                                <img src="http://openweathermap.org/img/wn/${day.weather[0].icon}.png" alt="${desc}" class="mx-auto" style="width: 40px;">
+                                <div class="font-bold text-xl">${temp}°F</div>
+                                <div class="text-xs text-gray-400 capitalize mb-2">${desc}</div>
+                                
+                                <!-- Detailed Metrics -->
+                                <div class="text-[10px] text-gray-300 border-t border-gray-800 pt-1 text-left space-y-1">
+                                    <div>🌡️ Feels: <span class="font-semibold text-gray-100">${feelsLike}°F</span></div>
+                                    <div>💧 Humidity: <span class="font-semibold text-gray-100">${humidity}%</span></div>
+                                    <div>💨 Wind: <span class="font-semibold text-gray-100">${wind} mph</span></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = "<p class='text-gray-400'>Forecast data unavailable.</p>";
+                }
             })
             .catch(err => {
                 document.getElementById("forecastContainer").innerHTML = "<p>Failed to load forecast.</p>";
@@ -99,7 +131,7 @@ document.addEventListener("DOMContentLoaded", function() {
             cities = data;
             cities.forEach((city, index) => {
                 const marker = L.marker([city.lat, city.lon]);
-                marker.bindPopup(`<b>${city.name}, ${city.country}</b><br><button onclick="fetchNews(${index})">Show News</button>`);
+                marker.bindPopup(`<b>${city.name}, ${city.country}</b><br><button onclick="fetchNews(${index})" class="popup-button" style="margin-top:5px; padding: 4px 8px; background: #0ea5e9; color: #fff; border: none; border-radius: 3px; cursor: pointer;">Show News</button>`);
                 markers.addLayer(marker);
             });
             map.addLayer(markers);
